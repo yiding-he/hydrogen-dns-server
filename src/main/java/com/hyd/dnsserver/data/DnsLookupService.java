@@ -1,15 +1,17 @@
 package com.hyd.dnsserver.data;
 
+import io.netty.handler.codec.dns.DnsRecordType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.net.UnknownHostException;
+import java.util.List;
 
 @Service
 @Slf4j
 public class DnsLookupService {
 
-    public String lookup(String name) {
-        String answer = "11.22.33.44";
-        log.info("查询域名 {} 的 IP 地址，返回 {}", name, answer);
-        return answer;
+    public List<String> lookup(DnsRecordType type, String name) throws UnknownHostException {
+        return SystemDnsLookup.lookup(type, name);
     }
 }

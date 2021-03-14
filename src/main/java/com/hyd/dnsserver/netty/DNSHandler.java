@@ -9,6 +9,11 @@ import io.netty.handler.codec.dns.*;
 import io.netty.util.internal.SocketUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 @Slf4j
 public class DNSHandler extends ChannelInboundHandlerAdapter {
 
@@ -25,34 +30,54 @@ public class DNSHandler extends ChannelInboundHandlerAdapter {
 
         if (queryRecord.type() == DnsRecordType.PTR) {
             DefaultDnsPtrRecord responseRecord = new DefaultDnsPtrRecord(
-                queryRecord.name(), queryRecord.dnsClass(), queryRecord.timeToLive(), "my-private-dns-server.com"
+                queryRecord.name(), DnsRecord.CLASS_IN, 250, "my-private-dns-server.com"
             );
-            DnsResponse response = createResponse(query, responseRecord);
+            DnsResponse response = createResponse(query, Collections.singletonList(responseRecord));
             ctx.channel().writeAndFlush(response);
         }
 
         if (queryRecord.type() == DnsRecordType.A) {
-            String ipAddress = dnsLookupService.lookup(queryRecord.name());
-            byte[] address = SocketUtils.addressByName(ipAddress).getAddress();
-            ByteBuf buf = Unpooled.wrappedBuffer(address);
-            DnsRecord responseRecord = new DefaultDnsRawRecord(
-                queryRecord.name(), queryRecord.type(), 3600, buf
-            );
-            DnsResponse response = createResponse(query, responseRecord);
+            List<String> ipAddresses = dnsLookupService.lookup(DnsRecordType.A, queryRecord.name());
+            DnsResponse response = createResponse(query, createDnsRecords(queryRecord, ipAddresses));
             ctx.channel().writeAndFlush(response);
         }
 
         if (queryRecord.type() == DnsRecordType.AAAA) {
-            DnsResponse response = createResponse(query, null);
+            List<String> ipAddresses = dnsLookupService.lookup(DnsRecordType.AAAA, queryRecord.name());
+            DnsResponse response = createResponse(query, createDnsRecords(queryRecord, ipAddresses));
             ctx.channel().writeAndFlush(response);
         }
     }
 
-    private DatagramDnsResponse createResponse(DatagramDnsQuery query, DnsRecord record) {
-        DatagramDnsResponse response = new DatagramDnsResponse(query.recipient(), query.sender(), query.id());
-        if (record != null) {
-            response.addRecord(DnsSection.ANSWER, record);
+    /**
+     * 根据查询请求记录和解析结果构建 DnsRecord 对象
+     *
+     * @param queryRecord 查询请求记录
+     * @param ipAddresses 解析结果
+     */
+    private List<DnsRecord> createDnsRecords(
+        DnsRecord queryRecord, List<String> ipAddresses
+    ) throws UnknownHostException {
+
+        List<DnsRecord> records = new ArrayList<>();
+        for (String ipAddress : ipAddresses) {
+            byte[] address = SocketUtils.addressByName(ipAddress).getAddress();
+            ByteBuf buf = Unpooled.wrappedBuffer(address);
+            DnsRecord record = new DefaultDnsRawRecord(queryRecord.name(), queryRecord.type(), 3600, buf);
+            records.add(record);
         }
+        return records;
+    }
+
+    /**
+     * 构建 DnsResponse 对象
+     *
+     * @param query   查询请求
+     * @param records 解析结果
+     */
+    private DatagramDnsResponse createResponse(DatagramDnsQuery query, List<DnsRecord> records) {
+        DatagramDnsResponse response = new DatagramDnsResponse(query.recipient(), query.sender(), query.id());
+        records.forEach(record -> response.addRecord(DnsSection.ANSWER, record));
         return response;
     }
 }
