@@ -1,2 +1,4 @@
-host,         ip
-google.com,   127.0.0.1
+"host","ip"
+"google.com.","127.0.0.1"
+"google.com.","127.0.0.2"
+"google.com.","127.0.0.3"

@@ -34,7 +34,7 @@ public class HydrogenDnsServerApplication {
     }
 
     @Bean
-    DnsRepository dnsRepository(LocalFileDnsConfiguration conf) {
+    DnsRepository dnsRepository(LocalFileDnsConfiguration conf) throws Exception {
         return new LocalFileDnsRepository(conf);
     }
 }
