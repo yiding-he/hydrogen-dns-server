@@ -21,19 +21,23 @@ public class DNSServer {
     }
 
     public void start() {
-        new Bootstrap()
-            .group(new NioEventLoopGroup())
-            .channel(NioDatagramChannel.class)
-            .handler(new ChannelInitializer<NioDatagramChannel>() {
-                @Override
-                protected void initChannel(NioDatagramChannel ch) {
-                    ch.pipeline()
-                        .addLast(new DatagramDnsResponseEncoder())
-                        .addLast(new DatagramDnsQueryDecoder())
-                        .addLast(new DNSHandler(dnsLookupService));
-                }
-            })
-            .bind(port);
-        log.info("DNS Server started at port {}", this.port);
+        try {
+            new Bootstrap()
+                .group(new NioEventLoopGroup())
+                .channel(NioDatagramChannel.class)
+                .handler(new ChannelInitializer<NioDatagramChannel>() {
+                    @Override
+                    protected void initChannel(NioDatagramChannel ch) {
+                        ch.pipeline()
+                            .addLast(new DatagramDnsResponseEncoder())
+                            .addLast(new DatagramDnsQueryDecoder())
+                            .addLast(new DNSHandler(dnsLookupService));
+                    }
+                })
+                .bind(port);
+            log.info("DNS Server started at port {}", this.port);
+        } catch (Exception e) {
+            log.error("DNS Server failed to start", e);
+        }
     }
 }
