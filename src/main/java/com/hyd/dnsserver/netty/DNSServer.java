@@ -34,7 +34,7 @@ public class DNSServer {
                             .addLast(new DNSHandler(dnsLookupService));
                     }
                 })
-                .bind(port);
+                .bind("0.0.0.0", port);
             log.info("DNS Server started at port {}", this.port);
         } catch (Exception e) {
             log.error("DNS Server failed to start", e);
