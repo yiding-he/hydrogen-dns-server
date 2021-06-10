@@ -8,8 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -24,16 +24,19 @@ public class DnsLookupService {
 
     public List<String> lookup(DnsRecordType type, String name) {
         return dnsResultCache.get(type.name() + ":" + name, __ -> {
+            List<String> lookupResult = Collections.emptyList();
             try {
-                List<String> lookupResult = dnsRepository.lookup(type, name);
+                lookupResult = dnsRepository.lookup(type, name);
                 if (lookupResult.isEmpty()) {
                     log.info("Repository record not found, name='{}', type={}", name, type);
                     lookupResult = SystemDnsLookup.lookup(type, name);
                 }
-                return lookupResult;
-            } catch (IOException e) {
-                throw new DnsException(e);
+            } catch (java.net.UnknownHostException e) {
+                log.error("java.net.UnknownHostException: {}", e.toString());
+            } catch (Exception e) {
+                log.error("", e);
             }
+            return lookupResult;
         });
     }
 }

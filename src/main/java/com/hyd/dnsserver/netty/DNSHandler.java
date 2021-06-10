@@ -28,25 +28,34 @@ public class DNSHandler extends ChannelInboundHandlerAdapter {
         DatagramDnsQuery query = (DatagramDnsQuery) msg;
         DnsRecord queryRecord = query.recordAt(DnsSection.QUESTION);
 
-        if (queryRecord.type() == DnsRecordType.PTR) {
-            DefaultDnsPtrRecord responseRecord = new DefaultDnsPtrRecord(
-                queryRecord.name(), DnsRecord.CLASS_IN, 250, "my-private-dns-server.com"
-            );
-            DnsResponse response = createResponse(query, Collections.singletonList(responseRecord));
-            ctx.channel().writeAndFlush(response);
+        if (query.opCode() == DnsOpCode.QUERY) {
+            if (queryRecord.type() == DnsRecordType.PTR) {
+                DefaultDnsPtrRecord responseRecord = new DefaultDnsPtrRecord(
+                    queryRecord.name(), DnsRecord.CLASS_IN, 250, "my-private-dns-server.com"
+                );
+                DnsResponse response = createResponse(query, Collections.singletonList(responseRecord));
+                ctx.channel().writeAndFlush(response);
+                return;
+            }
+
+            if (queryRecord.type() == DnsRecordType.A) {
+                List<String> ipAddresses = dnsLookupService.lookup(DnsRecordType.A, queryRecord.name());
+                DnsResponse response = createResponse(query, createDnsRecords(queryRecord, ipAddresses));
+                ctx.channel().writeAndFlush(response);
+                return;
+            }
+
+            if (queryRecord.type() == DnsRecordType.AAAA) {
+                List<String> ipAddresses = dnsLookupService.lookup(DnsRecordType.AAAA, queryRecord.name());
+                DnsResponse response = createResponse(query, createDnsRecords(queryRecord, ipAddresses));
+                ctx.channel().writeAndFlush(response);
+                return;
+            }
         }
 
-        if (queryRecord.type() == DnsRecordType.A) {
-            List<String> ipAddresses = dnsLookupService.lookup(DnsRecordType.A, queryRecord.name());
-            DnsResponse response = createResponse(query, createDnsRecords(queryRecord, ipAddresses));
-            ctx.channel().writeAndFlush(response);
-        }
-
-        if (queryRecord.type() == DnsRecordType.AAAA) {
-            List<String> ipAddresses = dnsLookupService.lookup(DnsRecordType.AAAA, queryRecord.name());
-            DnsResponse response = createResponse(query, createDnsRecords(queryRecord, ipAddresses));
-            ctx.channel().writeAndFlush(response);
-        }
+        DatagramDnsResponse response = new DatagramDnsResponse(query.recipient(), query.sender(), query.id());
+        response.setCode(DnsResponseCode.NOTIMP);
+        ctx.channel().writeAndFlush(response);
     }
 
     /**
@@ -63,7 +72,10 @@ public class DNSHandler extends ChannelInboundHandlerAdapter {
         for (String ipAddress : ipAddresses) {
             byte[] address = SocketUtils.addressByName(ipAddress).getAddress();
             ByteBuf buf = Unpooled.wrappedBuffer(address);
-            DnsRecord record = new DefaultDnsRawRecord(queryRecord.name(), queryRecord.type(), 3600, buf);
+
+            DefaultDnsRawRecord record =
+                new DefaultDnsRawRecord(queryRecord.name(), queryRecord.type(), 3600, buf);
+
             records.add(record);
         }
         return records;
@@ -77,6 +89,9 @@ public class DNSHandler extends ChannelInboundHandlerAdapter {
      */
     private DatagramDnsResponse createResponse(DatagramDnsQuery query, List<DnsRecord> records) {
         DatagramDnsResponse response = new DatagramDnsResponse(query.recipient(), query.sender(), query.id());
+        response.setRecursionAvailable(true);
+        response.setRecursionDesired(query.isRecursionDesired());
+        response.addRecord(DnsSection.QUESTION, query.recordAt(DnsSection.QUESTION));
         records.forEach(record -> response.addRecord(DnsSection.ANSWER, record));
         return response;
     }
