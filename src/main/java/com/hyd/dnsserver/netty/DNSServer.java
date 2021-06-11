@@ -1,6 +1,6 @@
 package com.hyd.dnsserver.netty;
 
-import com.hyd.dnsserver.data.DnsLookupService;
+import com.hyd.dnsserver.service.DnsLookupService;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;

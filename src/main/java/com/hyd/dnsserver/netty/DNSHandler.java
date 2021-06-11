@@ -1,6 +1,6 @@
 package com.hyd.dnsserver.netty;
 
-import com.hyd.dnsserver.data.DnsLookupService;
+import com.hyd.dnsserver.service.DnsLookupService;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;

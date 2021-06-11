@@ -1,4 +1,4 @@
-package com.hyd.dnsserver.data;
+package com.hyd.dnsserver.service;
 
 public class DnsException extends RuntimeException {
 

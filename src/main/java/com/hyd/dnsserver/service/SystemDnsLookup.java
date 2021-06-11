@@ -1,4 +1,4 @@
-package com.hyd.dnsserver.data;
+package com.hyd.dnsserver.service;
 
 import io.netty.handler.codec.dns.DnsRecordType;
 import lombok.extern.slf4j.Slf4j;

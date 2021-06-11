@@ -1,6 +1,7 @@
 package com.hyd.dnsserver;
 
-import com.hyd.dnsserver.data.DnsLookupService;
+import com.hyd.dnsserver.admin.AdminConfiguration;
+import com.hyd.dnsserver.service.DnsLookupService;
 import com.hyd.dnsserver.netty.DNSServer;
 import com.hyd.dnsserver.repo.DnsRepository;
 import com.hyd.dnsserver.repo.local.LocalFileDnsConfiguration;
@@ -14,7 +15,8 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 @EnableConfigurationProperties({
-    LocalFileDnsConfiguration.class
+    LocalFileDnsConfiguration.class,
+    AdminConfiguration.class
 })
 public class HydrogenDnsServerApplication {
 

@@ -1,4 +1,4 @@
-package com.hyd.dnsserver.data;
+package com.hyd.dnsserver.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;

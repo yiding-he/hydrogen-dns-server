@@ -27,9 +27,9 @@ public class LocalFileDnsRepository implements DnsRepository {
 
     private final Timer fileWatcherTimer = new Timer();
 
-    private Map<DnsRecordType, Long> fileLastModified = new HashMap<>();
+    private final Map<DnsRecordType, Long> fileLastModified = new HashMap<>();
 
-    private Map<DnsRecordType, List<CSVRecord>> recordsMap = new HashMap<>();
+    private final Map<DnsRecordType, List<CSVRecord>> recordsMap = new HashMap<>();
 
     public LocalFileDnsRepository(LocalFileDnsConfiguration configuration) throws IOException {
         this.configuration = configuration;
@@ -47,6 +47,7 @@ public class LocalFileDnsRepository implements DnsRepository {
                 this.configuration.getConfigFolderPath() + "' is not a directory");
         }
 
+        int interval = configuration.getFileWatcherIntervalSec() * 1000;
         this.fileWatcherTimer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -56,7 +57,7 @@ public class LocalFileDnsRepository implements DnsRepository {
                     log.error("Error checking config", e);
                 }
             }
-        }, 5000, 5000);
+        }, interval, interval);
     }
 
     private void checkFiles(Path folderPath) throws IOException {
@@ -68,7 +69,7 @@ public class LocalFileDnsRepository implements DnsRepository {
             }
 
             if (Files.isDirectory(child)) {
-                log.warn("Path '{}' is not a file.", child.toString());
+                log.warn("Path '{}' is not a file.", child);
                 return;
             }
 
@@ -96,6 +97,10 @@ public class LocalFileDnsRepository implements DnsRepository {
         }
     }
 
+    public void invalidate(DnsRecordType type) {
+        this.fileLastModified.remove(type);
+    }
+
     @Override
     public List<String> lookup(DnsRecordType type, String name) {
         if (!this.recordsMap.containsKey(type)) {
@@ -106,5 +111,18 @@ public class LocalFileDnsRepository implements DnsRepository {
             .filter(record -> record.get("host").trim().equals(name))
             .map(record -> record.get("ip").trim())
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public void put(DnsRecordType type, String host, List<String> ip) {
+    }
+
+    @Override
+    public void persist() {
+    }
+
+    @Override
+    public void removeByHost(DnsRecordType type, String host) {
+
     }
 }
