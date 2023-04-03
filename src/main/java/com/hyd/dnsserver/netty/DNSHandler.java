@@ -1,6 +1,7 @@
 package com.hyd.dnsserver.netty;
 
 import com.hyd.dnsserver.data.DnsLookupService;
+import com.hyd.dnsserver.util.IpAddressUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -69,8 +70,13 @@ public class DNSHandler extends ChannelInboundHandlerAdapter {
     ) throws UnknownHostException {
 
         List<DnsRecord> records = new ArrayList<>();
-        for (String ipAddress : ipAddresses) {
-            byte[] address = SocketUtils.addressByName(ipAddress).getAddress();
+        for (String ipOrName : ipAddresses) {
+            byte[] address;
+            if (IpAddressUtil.isIpAddress(ipOrName)) {
+                address = IpAddressUtil.toBytes(ipOrName);
+            } else {
+                address = SocketUtils.addressByName(ipOrName).getAddress();
+            }
             ByteBuf buf = Unpooled.wrappedBuffer(address);
 
             DefaultDnsRawRecord record =
